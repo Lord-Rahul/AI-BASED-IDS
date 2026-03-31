@@ -12,7 +12,6 @@ from sklearn.model_selection import train_test_split
 def main():
     datasetDir = "../Datasets"
     modelOutputPath = "model.pkl"
-    maxRecords = 2000
     
     print(f"[info] looking for CSV files in {datasetDir}")
     csvFiles = sorted(glob.glob(os.path.join(datasetDir, "*.csv")))
@@ -39,15 +38,14 @@ def main():
     data.columns = data.columns.str.strip()
     data.replace([np.inf, -np.inf], np.nan , inplace=True)
     data.dropna(inplace=True)
-    data = data.head(maxRecords)
     print(f"[info] Shape after removing missing values : {data.shape}")
     
     if data.shape[1] < 2 :
         print("[error] dataset must have at least one feature column and one label column. ")
         return
     
-    x = data.iloc[:, :-1]
-    y = data.iloc[:, -1]
+    x = data.iloc[:,:-1]
+    y = data.iloc[:,:-1]
     
     print("[info] splitting train/test sets.....")
     X_train, X_test, Y_train, Y_test = train_test_split(x,y, test_size=0.2,random_state=42,stratify=y)
@@ -65,7 +63,7 @@ def main():
     accuracy = accuracy_score(Y_test, yPred)
     print(f"[RESULT] Model Accuracy: {accuracy:.4f}")
     
-    print(f"[INFO] Saving model to: {modelOutputPath}")
+    print(f"[INFO] Saving model to: {model_output_path}")
     joblib.dump(model,modelOutputPath)
     print("[DONE] Model saved successfully as model.pkl")
 
