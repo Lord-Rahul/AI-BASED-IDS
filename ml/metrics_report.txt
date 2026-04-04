@@ -1,0 +1,26 @@
+Hold-out validation metrics
+holdout_file: Wednesday-workingHours.pcap_ISCX.csv
+rows_evaluated: 691406
+accuracy: 0.633686
+f1_macro: 0.064888
+f1_weighted: 0.495165
+
+Classification report
+                            precision    recall  f1-score   support
+
+                    BENIGN       0.64      1.00      0.78    439683
+                       Bot       0.00      0.00      0.00         0
+                      DDoS       0.00      0.00      0.00         0
+             DoS GoldenEye       0.00      0.00      0.00     10293
+                  DoS Hulk       0.00      0.00      0.00    230124
+          DoS Slowhttptest       0.00      0.00      0.00      5499
+             DoS slowloris       0.00      0.00      0.00      5796
+                Heartbleed       0.00      0.00      0.00        11
+                  PortScan       0.00      0.00      0.00         0
+  Web Attack � Brute Force       0.00      0.00      0.00         0
+Web Attack � Sql Injection       0.00      0.00      0.00         0
+          Web Attack � XSS       0.00      0.00      0.00         0
+
+                  accuracy                           0.63    691406
+                 macro avg       0.05      0.08      0.06    691406
+              weighted avg       0.41      0.63      0.50    691406
