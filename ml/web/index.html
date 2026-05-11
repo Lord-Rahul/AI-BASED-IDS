@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI-Based IDS</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">AI-Based IDS</p>
+          <h1>Upload a CSV and inspect traffic predictions in the browser.</h1>
+          <p class="lede">
+            This interface sends your CICIDS-style CSV to the Flask model API and
+            shows BENIGN vs ATTACK output instantly.
+          </p>
+        </div>
+        <div class="status-card">
+          <span class="status-label">API status</span>
+          <strong id="healthStatus">Checking...</strong>
+          <small id="healthMeta">Connecting to local IDS service</small>
+        </div>
+      </section>
+
+      <section class="panel upload-panel">
+        <div class="panel-copy">
+          <h2>Predict from CSV</h2>
+          <p>Choose a CSV file with the same CICIDS feature layout used for training.</p>
+        </div>
+
+        <form id="uploadForm" class="upload-form">
+          <label class="file-drop" for="fileInput">
+            <input id="fileInput" name="file" type="file" accept=".csv,text/csv" />
+            <span>Drop a CSV here or click to choose one</span>
+            <small>Large files are supported, but the browser will show only a preview.</small>
+          </label>
+
+          <button type="submit" id="predictButton">Run prediction</button>
+        </form>
+      </section>
+
+      <section class="grid">
+        <article class="metric">
+          <span>Rows</span>
+          <strong id="rowCount">0</strong>
+        </article>
+        <article class="metric danger">
+          <span>ATTACK</span>
+          <strong id="attackCount">0</strong>
+        </article>
+        <article class="metric safe">
+          <span>BENIGN</span>
+          <strong id="benignCount">0</strong>
+        </article>
+        <article class="metric">
+          <span>Avg attack score</span>
+          <strong id="attackScore">0.000</strong>
+        </article>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-copy">
+          <h2>Classification summary</h2>
+          <p>Distribution of predicted BENIGN vs ATTACK classifications.</p>
+        </div>
+        <canvas id="metricsChart" width="540" height="240" aria-label="Metrics distribution chart"></canvas>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="panel-copy">
+          <div class="panel-head">
+            <div>
+              <h2>Prediction preview</h2>
+              <p>The table shows the first rows returned by the API with their predicted labels.</p>
+            </div>
+            <div class="button-row">
+              <button type="button" id="downloadPredictionsButton" class="secondary-button" disabled>Download predictions CSV</button>
+              <button type="button" id="downloadReportButton" class="secondary-button" disabled>Download attack report</button>
+            </div>
+          </div>
+        </div>
+        <div id="resultState" class="result-state">No prediction run yet.</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Predicted label</th>
+              </tr>
+            </thead>
+            <tbody id="predictionBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-copy">
+          <h2>Attack score distribution</h2>
+          <p>Histogram of attack scores with the current threshold marked in red.</p>
+        </div>
+        <canvas id="scoreChart" width="1080" height="280" aria-label="Attack score chart"></canvas>
+      </section>
+
+      <section class="panel attack-panel">
+        <div class="panel-copy">
+          <div class="panel-head">
+            <div>
+              <h2>Attack report</h2>
+              <p>Detailed findings for rows predicted as attacks, including a compact feature snapshot.</p>
+            </div>
+            <div class="attack-controls">
+              <input id="attackSearchInput" type="search" placeholder="Search row, risk, or feature text" />
+              <select id="riskFilterSelect">
+                <option value="all">All risks</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="attack-summary" id="attackSummary">No attack rows yet.</div>
+        <div class="attack-layout">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th onclick="sortAttackTable('row_number')" style="cursor: pointer;">Row <span class="sort-indicator"></span></th>
+                  <th onclick="sortAttackTable('attack_score')" style="cursor: pointer;">Score <span class="sort-indicator"></span></th>
+                  <th onclick="sortAttackTable('risk')" style="cursor: pointer;">Risk <span class="sort-indicator"></span></th>
+                  <th>Feature snapshot</th>
+                </tr>
+              </thead>
+              <tbody id="attackBody"></tbody>
+            </table>
+          </div>
+          <aside class="details-card" id="attackDetailCard">
+            <h3>Attack details</h3>
+            <p id="attackDetailEmpty">Select an attack row to inspect its feature snapshot.</p>
+            <dl id="attackDetailList" class="detail-list hidden"></dl>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

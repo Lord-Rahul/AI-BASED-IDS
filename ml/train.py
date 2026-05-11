@@ -9,6 +9,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 
 
+def normalize_binary_labels(series: pd.Series) -> pd.Series:
+    labels = series.astype("string").str.strip()
+    valid = labels.notna() & (labels != "") & (labels.str.lower() != "nan")
+    labels = labels.loc[valid]
+    labels = labels.where(labels.str.upper() == "BENIGN", other="ATTACK")
+    return labels.astype(str)
+
+
 def preprocess_chunk(df, feature_cols, label_col) -> Tuple[pd.DataFrame, pd.Series]:
     # Normalize column names and replace non-finite values before filtering.
     df.columns = df.columns.str.strip()
@@ -16,7 +24,7 @@ def preprocess_chunk(df, feature_cols, label_col) -> Tuple[pd.DataFrame, pd.Seri
 
     # Keep only expected feature columns and coerce everything to numeric.
     X = df[feature_cols].apply(pd.to_numeric, errors="coerce")
-    y = df[label_col].astype(str).str.strip()
+    y = normalize_binary_labels(df[label_col])
 
     # Drop rows with any invalid feature value or missing label.
     valid = X.notna().all(axis=1) & y.notna()
@@ -26,17 +34,25 @@ def preprocess_chunk(df, feature_cols, label_col) -> Tuple[pd.DataFrame, pd.Seri
     return X.astype(np.float32), y
 
 
+def predict_with_threshold(model, X: np.ndarray, attack_threshold: float) -> np.ndarray:
+    attack_index = int(np.where(model.classes_ == "ATTACK")[0][0])
+    attack_scores = model.predict_proba(X)[:, attack_index]
+    return np.where(attack_scores >= attack_threshold, "ATTACK", "BENIGN")
+
+
 def main():
     # Core runtime settings.
-    dataset_dir = "../Datasets"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    dataset_dir = os.path.join(base_dir, "..", "Datasets")
     holdout_file_name = "Wednesday-workingHours.pcap_ISCX.csv"
-    model_output_path = "model.pkl"
-    report_output_path = "metrics_report.txt"
-    confusion_matrix_output_path = "confusion_matrix.csv"
-    per_class_metrics_output_path = "per_class_metrics.csv"
+    model_output_path = os.path.join(base_dir, "model.pkl")
+    report_output_path = os.path.join(base_dir, "metrics_report.txt")
+    confusion_matrix_output_path = os.path.join(base_dir, "confusion_matrix.csv")
+    per_class_metrics_output_path = os.path.join(base_dir, "per_class_metrics.csv")
     chunk_size = 100_000
     max_holdout_eval_rows = 0
     max_train_rows = 400_000
+    attack_threshold = 0.2
     rng = np.random.default_rng(seed=42)
 
     # Discover all input CSV files.
@@ -87,8 +103,7 @@ def main():
             skipinitialspace=True,
         ):
             y_chunk.columns = y_chunk.columns.str.strip()
-            labels = y_chunk[label_col].astype(str).str.strip()
-            labels = labels[(labels != "") & (labels.str.lower() != "nan")]
+            labels = normalize_binary_labels(y_chunk[label_col])
             for cls_name, cnt in labels.value_counts().items():
                 class_total_counts[cls_name] = class_total_counts.get(cls_name, 0) + int(cnt)
 
@@ -192,7 +207,7 @@ def main():
                 X_holdout = X_holdout.iloc[:remaining]
                 y_holdout = y_holdout.iloc[:remaining]
 
-        y_hat = model.predict(X_holdout.to_numpy())
+        y_hat = predict_with_threshold(model, X_holdout.to_numpy(), attack_threshold)
         y_true.extend(y_holdout.tolist())
         y_pred.extend(y_hat.tolist())
         holdout_rows += len(X_holdout)
@@ -256,6 +271,8 @@ def main():
         "feature_columns": feature_cols,
         "label_column": label_col,
         "algorithm": "RandomForestClassifier",
+        "task": "binary_benign_vs_attack",
+        "attack_threshold": attack_threshold,
         "max_train_rows": max_train_rows,
         "holdout_file": os.path.basename(holdout_file_path),
     }
